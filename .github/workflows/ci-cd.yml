@@ -16,6 +16,8 @@ permissions:
 jobs:
 
   # 1. Secret Detection
+  
+  # 1. Secret Detection
   gitleaks:
     name: Gitleaks - Secret Scanning
     runs-on: ubuntu-latest
@@ -23,8 +25,6 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Install Gitleaks
         run: |
@@ -49,6 +49,7 @@ jobs:
       - name: Fail if secrets are detected
         if: steps.gitleaks.outcome == 'failure'
         run: exit 1
+
 
   # 2. Static Application Security Testing
   semgrep:
