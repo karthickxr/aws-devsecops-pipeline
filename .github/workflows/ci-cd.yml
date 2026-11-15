@@ -16,19 +16,22 @@ permissions:
 jobs:
 
   # 1. Secret Detection
-   name: Run Gitleaks
-   uses: gitleaks/gitleaks-action@v2
-   env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  gitleaks:
+    name: Gitleaks - Secret Scanning
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+      - name: Install Gitleaks
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz
+          sudo install gitleaks /usr/local/bin/gitleaks
+
+      - name: Scan Project Files
+        run: gitleaks dir --redact --exit-code 1 .
 
   # 2. Static Application Security Testing
   semgrep:
