@@ -1,0 +1,84 @@
+
+name: AWS DevSecOps Security Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  # 1. Secret Detection
+  gitleaks:
+    name: Gitleaks - Secret Scanning
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+
+  # 2. Static Application Security Testing
+  semgrep:
+    name: Semgrep - SAST
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Semgrep
+        run: python -m pip install semgrep
+
+      - name: Run Semgrep Scan
+        run: semgrep scan --config p/python --error app/
+
+  # 3. Trivy Filesystem Vulnerability Scan
+  trivy-filesystem:
+    name: Trivy - Filesystem Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Filesystem Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+
+  # 4. Trivy Docker Image Vulnerability Scan
+  trivy-container:
+    name: Trivy - Docker Image Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: docker build -t aws-devsecops-app:latest .
+
+      - name: Run Trivy Docker Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: image
+          image-ref: aws-devsecops-app:latest
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: '1'
