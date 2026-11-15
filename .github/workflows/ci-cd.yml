@@ -17,16 +17,8 @@ jobs:
 
   # 1. Secret Detection
   gitleaks:
-    - name: Scan Project Files
-  run: |
-    gitleaks dir --redact --report-format json --report-path gitleaks-report.json --exit-code 1 .
-          - name: Upload Gitleaks Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gitleaks-report
-          path: gitleaks-report.json
-          if-no-files-found: ignore
+    name: Gitleaks - Secret Scanning
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
@@ -41,7 +33,22 @@ jobs:
           sudo install gitleaks /usr/local/bin/gitleaks
 
       - name: Scan Project Files
-        run: gitleaks dir --redact --exit-code 1 .
+        id: gitleaks
+        continue-on-error: true
+        run: |
+          gitleaks dir --redact --report-format json --report-path gitleaks-report.json --exit-code 1 .
+
+      - name: Upload Gitleaks Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-report
+          path: gitleaks-report.json
+          if-no-files-found: ignore
+
+      - name: Fail if secrets are detected
+        if: steps.gitleaks.outcome == 'failure'
+        run: exit 1
 
   # 2. Static Application Security Testing
   semgrep:
