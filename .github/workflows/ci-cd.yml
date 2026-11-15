@@ -16,8 +16,6 @@ permissions:
 jobs:
 
   # 1. Secret Detection
-  
-  # 1. Secret Detection
   gitleaks:
     name: Gitleaks - Secret Scanning
     runs-on: ubuntu-latest
@@ -34,9 +32,12 @@ jobs:
 
       - name: Scan Project Files
         id: gitleaks
-        continue-on-error: true
         run: |
+          set +e
           gitleaks dir --redact --report-format json --report-path gitleaks-report.json --exit-code 1 .
+          scan_exit=$?
+          echo "scan_exit=$scan_exit" >> "$GITHUB_OUTPUT"
+          exit 0
 
       - name: Upload Gitleaks Report
         if: always()
@@ -44,12 +45,12 @@ jobs:
         with:
           name: gitleaks-report
           path: gitleaks-report.json
-          if-no-files-found: ignore
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Fail if secrets are detected
-        if: steps.gitleaks.outcome == 'failure'
+        if: steps.gitleaks.outputs.scan_exit == '1'
         run: exit 1
-
 
   # 2. Static Application Security Testing
   semgrep:
